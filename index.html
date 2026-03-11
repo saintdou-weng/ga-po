@@ -453,6 +453,12 @@ body{min-height:100vh;background:var(--bg);font-family:'Noto Sans TC',sans-serif
     </div>
     <!-- Mobile cards -->
     <div id="inv-cards-mobile" style="display:none"></div>
+
+    <!-- PO History -->
+    <div style="margin-top:24px">
+      <h3 id="po-hist-title" style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px">📋 採購記錄 PO History</h3>
+      <div id="po-hist-list"></div>
+    </div>
   </div>
 
   <!-- SETTINGS PAGE -->
@@ -615,9 +621,9 @@ async function exportYearExcel(year){
 // USERS
 // ════════════════════════════════
 const USERS = [
-  {id:"u1", name:"Nin",  nameEn:"Nin",  pin:"1111", role:"applicant"},
-  {id:"u2", name:"Phea", nameEn:"Phea", pin:"2222", role:"verifier"},
-  {id:"u3", name:"Paul", nameEn:"Paul", pin:"2026", role:"approver"},
+  {id:"u1", name:"Applicant", nameEn:"Applicant", pin:"1111", role:"applicant"},
+  {id:"u2", name:"Review",    nameEn:"Review",    pin:"2222", role:"verifier"},
+  {id:"u3", name:"Manager",   nameEn:"Manager",   pin:"2026", role:"approver"},
 ];
 const RC = {
   applicant:{label:"申請人",en:"Applicant",color:"#2563eb",bg:"#dbeafe",border:"#93c5fd"},
@@ -780,7 +786,7 @@ function showPage(p){
   const titles={po:lang==="zh"?"日常用品採購單":"Monthly Supplies Order",
     inv:lang==="zh"?"庫存管理":"Inventory",settings:lang==="zh"?"設定":"Settings"};
   document.getElementById("htitle").textContent=titles[p]||titles.po;
-  if(p==="inv"){ syncInvMonthDisplay(); renderInv(); }
+  if(p==="inv"){ syncInvMonthDisplay(); renderInv(); loadPOHistory(); }
   if(p==="settings") renderSettings();
 }
 
@@ -1025,6 +1031,74 @@ function onMonthChange(m){
   document.getElementById("msel").value=m;
   document.getElementById("inv-month-sel").value=m;
   renderInv();
+}
+
+// ════════════════════════════════
+// PO HISTORY LIST (in Inventory page)
+// ════════════════════════════════
+let poHistoryData = [];
+
+async function loadPOHistory() {
+  try {
+    const resp = await fetch(`${GAS_URL}?action=getHistory&year=${YEAR}`);
+    const json = await resp.json();
+    if (json.ok) {
+      poHistoryData = json.data || [];
+      renderPOHistory();
+    }
+  } catch(e) { console.warn("loadPOHistory error:", e); }
+}
+
+function renderPOHistory() {
+  const container = document.getElementById("po-hist-list");
+  if (!container) return;
+  const MO2 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const statusMap = {
+    APPROVED: {label:"✅ 已核可", color:"var(--green)"},
+    SUBMITTED: {label:"⏳ 待審查", color:"var(--amber)"},
+    VERIFIED:  {label:"🔵 待核可", color:"var(--blue)"},
+    RETURNED:  {label:"↩ 已退回", color:"var(--orange)"},
+    REJECTED:  {label:"❌ 已拒絕", color:"var(--red)"},
+    VOIDED:    {label:"🗑️ 已作廢", color:"var(--text3)"},
+  };
+  if (!poHistoryData.length) {
+    container.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:12px">── ${lang==="zh"?"今年暫無記錄":"No records this year"} ──</div>`;
+    return;
+  }
+  const sorted = [...poHistoryData].reverse();
+  container.innerHTML = sorted.map(po => {
+    const st = statusMap[po.status] || {label: po.status, color:"var(--text2)"};
+    const canVoid = po.status === "APPROVED" && cu && cu.role === "approver";
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:180px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--text)">${po.poNumber||"(no#)"}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${MO2[po.month]||""} ${po.year} · ${po.applicant||""} · ${po.items.length} 項</div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:${st.color}">${st.label}</div>
+      ${canVoid ? `<button onclick="voidPO('${po.poId}','${po.poNumber||po.poId}')"
+        style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);border-radius:6px;
+        padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">🗑️ 作廢 Void</button>` : ""}
+    </div>`;
+  }).join("");
+}
+
+async function voidPO(poId, poNum) {
+  const msg = lang==="zh"
+    ? `確定要作廢採購單 ${poNum}？\n庫存數量將自動回退。`
+    : `Void PO ${poNum}?\nInventory will be reversed automatically.`;
+  if (!confirm(msg)) return;
+  try {
+    const resp = await fetch(`${GAS_URL}?action=voidPO&poId=${encodeURIComponent(poId)}&userName=${encodeURIComponent(cu.name)}`);
+    const json = await resp.json();
+    if (json.ok) {
+      alert(lang==="zh" ? "✅ 已作廢，庫存已回退！" : "✅ Voided! Inventory reversed.");
+      await loadPOHistory();
+      await loadStateCloud();
+      renderInv();
+    } else {
+      alert("❌ " + (json.msg || "Error"));
+    }
+  } catch(e) { alert("❌ Network error"); }
 }
 
 function renderInv(){
@@ -1429,44 +1503,12 @@ function chQ(id,d){if(cu.role!=="applicant"||poStatus!=="draft")return;ords[id].
 function setQ(id,v){if(cu.role!=="applicant"||poStatus!=="draft")return;ords[id].qty=Math.max(0,parseInt(v)||0);render();}
 function setN(id,v){ords[id].note=v;}
 
-async function doSubmit(){
+function doSubmit(){
   if(totalN()===0||poStatus!=="draft")return;
-
-  // 收集有數量的品項
-  const items = ordItems().map(item=>({
-    id:   item.id,
-    name: item.name,
-    cn:   item.cn,
-    qty:  ords[item.id].qty,
-    note: ords[item.id].note||""
-  }));
-  if(items.length===0) return;
-
-  // 更新本地狀態（立即顯示）
   poStatus="submitted";
   sigs.applicant={name:cu.name,date:new Date().toLocaleDateString()};
   saveState();
   render(); openMod();
-
-  // ★ 呼叫 GAS：寫入 Sheet + 發 Telegram 按鈕
-  const payload={
-    name:  cu.name,
-    uid:   _params.get("uid")||cu.id,  // 優先用 Telegram UID
-    year:  YEAR,
-    month: curMonth,
-    items: items
-  };
-  try{
-    const resp=await fetch(`${GAS_URL}?action=submit&data=${encodeURIComponent(JSON.stringify(payload))}`);
-    const json=await resp.json();
-    if(!json.ok){
-      console.error("GAS submit error:",json.msg);
-      alert((lang==="zh"?"⚠️ 提交失敗：":"⚠️ Submit failed: ")+(json.msg||"Unknown error"));
-    }
-  }catch(e){
-    console.error("Submit fetch error:",e);
-    alert((lang==="zh"?"⚠️ 網路錯誤，請重試":"⚠️ Network error, please retry"));
-  }
 }
 function doVerify(ok){
   if(cu.role!=="verifier"||poStatus!=="submitted")return;
