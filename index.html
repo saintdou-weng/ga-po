@@ -1503,12 +1503,20 @@ function chQ(id,d){if(cu.role!=="applicant"||poStatus!=="draft")return;ords[id].
 function setQ(id,v){if(cu.role!=="applicant"||poStatus!=="draft")return;ords[id].qty=Math.max(0,parseInt(v)||0);render();}
 function setN(id,v){ords[id].note=v;}
 
-function doSubmit(){
+async function doSubmit(){
   if(totalN()===0||poStatus!=="draft")return;
   poStatus="submitted";
   sigs.applicant={name:cu.name,date:new Date().toLocaleDateString()};
   saveState();
   render(); openMod();
+  try{
+    const items=ordItems().map(i=>({
+      id:i.id,name:i.name,cn:i.cn||i.name,cat:i.cat||"",
+      qty:ords[i.id].qty,note:ords[i.id].note||""
+    }));
+    const payload={name:cu.name,uid:cu.uid,year:YEAR,month:curMonth,items};
+    await fetch(GAS_URL+"?action=submit&data="+encodeURIComponent(JSON.stringify(payload)));
+  }catch(e){console.warn("submit error",e);}
 }
 function doVerify(ok){
   if(cu.role!=="verifier"||poStatus!=="submitted")return;
