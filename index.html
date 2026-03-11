@@ -983,7 +983,7 @@ function renderGrid(){
     : CATS[activeCat].items.map(i=>({...i,color:CATS[activeCat].color,bgLight:CATS[activeCat].bgLight}));
 
   document.getElementById("grid").innerHTML=items.map(item=>{
-    const o=ords[item.id]; const on=o.qty>0; const col=item.color;
+    const o=ords[item.id]||(ords[item.id]={qty:0,note:""}); const on=o.qty>0; const col=item.color;
     const unit=getUnit(item.id);
     const safety=getSafety(item.id);
     const invM=getInvMonth(curMonth);
