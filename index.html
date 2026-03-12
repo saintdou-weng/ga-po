@@ -647,10 +647,14 @@ const CATS = {
     {id:28,name:"Mop",                cn:"拖把",        e:"🪣",bg:"#bfdbfe"},
     {id:31,name:"Plastic Glove",      cn:"膠手套",      e:"🧤",bg:"#ddd6fe"},
     {id:35,name:"Plastic Broom",      cn:"塑膠掃把",    e:"🪠",bg:"#a7f3d0"},
+    {id:66,name:"Broom",               cn:"掃把",         e:"🧹",bg:"#d1fae5"},
     {id:38,name:"Soap Powder",        cn:"洗衣粉",      e:"🫧",bg:"#bae6fd"},
     {id:39,name:"Small Poly Bag",     cn:"小垃圾袋",    e:"🛍️",bg:"#6ee7b7"},
     {id:49,name:"Tissue Paper",       cn:"紙巾",        e:"🧻",bg:"#fde68a"},
     {id:50,name:"Toilet Bleach",      cn:"廁所漂白水",  e:"🚽",bg:"#bfdbfe"},
+    {id:56,name:"Fresher Spray",       cn:"空氣清新劑",  e:"🌸",bg:"#d1fae5"},
+    {id:58,name:"Toilet Paper",        cn:"廁紙",        e:"🧻",bg:"#fde68a"},
+    {id:60,name:"Clear Plastic Bag",   cn:"透明膠袋",    e:"🛍️",bg:"#a7f3d0"},
   ]},
   stationery:{icon:"✏️",color:"#2563eb",bgLight:"#dbeafe",lz:"文具用品",le:"Stationery",items:[
     {id:1, name:"A4 Paper",               cn:"A4 紙",        e:"📄",bg:"#bfdbfe"},
@@ -682,11 +686,19 @@ const CATS = {
     {id:37,name:"Red Pen",                cn:"紅色原子筆",   e:"🔴",bg:"#fca5a5"},
     {id:40,name:"Staple #10",             cn:"訂書針 #10",   e:"📌",bg:"#fca5a5"},
     {id:41,name:"Clear Tape",             cn:"透明膠紙",     e:"🔲",bg:"#e0f2fe"},
+    {id:65,name:"Small Clear Tape",        cn:"小透明膠紙",   e:"🔲",bg:"#e0f2fe"},
     {id:42,name:"Tailor Chalk",           cn:"裁縫粉筆",     e:"🪡",bg:"#fce7f3"},
     {id:43,name:"Tape Measure",           cn:"皮尺",         e:"📐",bg:"#fde68a"},
     {id:51,name:"Yellow Tape",            cn:"黃色膠紙",     e:"📏",bg:"#fef9c3"},
     {id:52,name:"Case ID Card",           cn:"員工証套",     e:"🪪",bg:"#bfdbfe"},
     {id:53,name:"ID Card",                cn:"員工証",       e:"🪪",bg:"#bfdbfe"},
+    {id:54,name:"Clipboard",               cn:"夾板",         e:"📋",bg:"#bfdbfe"},
+    {id:55,name:"Plastic Clear Sheet",     cn:"透明膠套",     e:"📄",bg:"#e0f2fe"},
+    {id:57,name:"String Folder",           cn:"繩子文件夾",   e:"📁",bg:"#ddd6fe"},
+    {id:61,name:"Binder Clip 25mm",        cn:"長尾夾 25mm",  e:"🖇️",bg:"#ddd6fe"},
+    {id:62,name:"Glue Stick",              cn:"固體膠",       e:"🖊️",bg:"#fde68a"},
+    {id:63,name:"A4 Paper (180g)",         cn:"A4紙 180g",   e:"📄",bg:"#bfdbfe"},
+    {id:64,name:"Clear Plastic Folder",    cn:"透明文件夾",   e:"📁",bg:"#e0f2fe"},
   ]},
   toner:{icon:"🖨️",color:"#ea580c",bgLight:"#ffedd5",lz:"碳粉/設備",le:"Toner",items:[
     {id:44,name:"Toner 79A",cn:"碳粉 79A",e:"🖨️",bg:"#fed7aa"},
@@ -694,6 +706,7 @@ const CATS = {
     {id:46,name:"Toner 85A",cn:"碳粉 85A",e:"🖨️",bg:"#fca5a5"},
     {id:47,name:"Toner 61A",cn:"碳粉 61A",e:"🖨️",bg:"#fed7aa"},
     {id:48,name:"Toner A45",cn:"碳粉 A45",e:"🖨️",bg:"#fde68a"},
+    {id:59,name:"Toner HP110",cn:"碳粉 HP110",e:"🖨️",bg:"#fed7aa"},
   ]}
 };
 
@@ -980,7 +993,7 @@ function renderGrid(){
   const editable=poStatus==="draft";
   const items=srchQ
     ? allItems().filter(i=>i.name.toLowerCase().includes(srchQ.toLowerCase())||i.cn.includes(srchQ))
-    : CATS[activeCat].items.map(i=>({...i,color:CATS[activeCat].color,bgLight:CATS[activeCat].bgLight}));
+    : [...CATS[activeCat].items,...customItems.filter(i=>i.catKey===activeCat)].map(i=>({...i,color:CATS[activeCat].color,bgLight:CATS[activeCat].bgLight})).filter(i=>!hiddenItems[i.id]);
 
   document.getElementById("grid").innerHTML=items.map(item=>{
     const o=ords[item.id]||(ords[item.id]={qty:0,note:""}); const on=o.qty>0; const col=item.color;
