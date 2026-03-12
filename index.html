@@ -1799,8 +1799,8 @@ function renderImBody(){
             border-radius:4px;padding:1px 6px;font-weight:700">${zh?"自訂":"Custom"}</span>`:""}
           ${isHidden
             ?`<button class="il-del" style="background:var(--green-bg);border-color:var(--green-border);color:var(--green)"
-               onclick="imToggleHide(${item.id},false)">↩ ${zh?"恢復":"Restore"}</button>`
-            :`<button class="il-del" onclick="imToggleHide(${item.id},true)">✕ ${zh?"隱藏":"Hide"}</button>`}
+               onclick="imToggleHide('${item.id}',false)">↩ ${zh?"恢復":"Restore"}</button>`
+            :`<button class="il-del" onclick="imToggleHide('${item.id}',true)">✕ ${zh?"隱藏":"Hide"}</button>`}
         </div>`;
       });
     });
