@@ -1581,8 +1581,9 @@ function renderModalBody(){
   document.getElementById("mmeta").textContent=`${lang==="zh"?MZ[curMonth]:MO[curMonth]} ${YEAR} · ${totalN()} ${lang==="zh"?"項":"items"} · ${poStatus.toUpperCase()}${poTag}`;
 
   let html="";
-  Object.entries(CATS).forEach(([,d])=>{
-    const rows=d.items.filter(i=>ords[i.id]?.qty>0);
+  Object.entries(CATS).forEach(([catKey,d])=>{
+    const catItems=[...d.items,...customItems.filter(c=>c.catKey===catKey)];
+    const rows=catItems.filter(i=>ords[i.id]?.qty>0);
     if(!rows.length)return;
     html+=`<div class="mcat" style="color:${d.color};border-color:${d.color}">${d.icon} ${lang==="zh"?d.lz:d.le}</div>`;
     rows.forEach(item=>{
@@ -1698,9 +1699,9 @@ function exportInvExcel(){
 // ════════════════════════════════
 function exportPDF(){
   const ordered=ordItems();
-  const groups=Object.entries(CATS).map(([,d])=>({
+  const groups=Object.entries(CATS).map(([catKey,d])=>({
     color:d.color,icon:d.icon,label:lang==="zh"?d.lz:d.le,
-    items:d.items.filter(i=>ords[i.id]?.qty>0)
+    items:[...d.items,...customItems.filter(c=>c.catKey===catKey)].filter(i=>ords[i.id]?.qty>0)
   })).filter(g=>g.items.length>0);
   const title=lang==="zh"?`總務部日常用品採購單 — ${MZ[curMonth]} ${YEAR}`:`GA Supplies Order — ${MO[curMonth]} ${YEAR}`;
   const html=`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${title}</title>
