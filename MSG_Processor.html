@@ -89,7 +89,7 @@ tr.err td{background:#fff5f5}
   <div class="ico">📂</div>
   <strong>拖入 .msg 檔案（可多選）</strong>
   <p>或點此瀏覽 · 支援批次上傳 · 不上傳任何資料</p>
-  <input type="file" id="fileInput" multiple onchange="go(this.files)">
+  <input type="file" id="fileInput" multiple>
 </div>
 
 <details id="kwBox">
@@ -579,6 +579,9 @@ async function gasSave(){
 
 // Auto-ping on load
 window.addEventListener('DOMContentLoaded', ()=>{ gasPing(); });
+
+const fi=document.getElementById('fileInput');
+fi.addEventListener('change',function(){go(this.files);this.value='';});
 
 const dz=document.getElementById('drop');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
