@@ -89,7 +89,7 @@ tr.err td{background:#fff5f5}
   <div class="ico">📂</div>
   <strong>拖入 .msg 檔案（可多選）</strong>
   <p>或點此瀏覽 · 支援批次上傳 · 不上傳任何資料</p>
-  <input type="file" id="fileInput" accept=".msg" multiple onchange="go(this.files)">
+  <input type="file" id="fileInput" multiple onchange="go(this.files)">
 </div>
 
 <details id="kwBox">
@@ -342,8 +342,13 @@ function genCode(code,yr,n){return`EXT-RE-${code}-${yr}-${String(n).padStart(4,'
 
 // ── File handling ─────────────────────────────────────────────────
 async function go(files){
-  const mf=Array.from(files).filter(f=>f.name.toLowerCase().endsWith('.msg'));
-  if(!mf.length)return;
+  if(!files||!files.length){alert('沒有收到檔案');return;}
+  const all=Array.from(files);
+  const mf=all.filter(f=>f.name.toLowerCase().endsWith('.msg'));
+  if(!mf.length){
+    alert('收到 '+all.length+' 個檔案，但沒有 .msg 格式\n\n檔名：'+all.map(f=>f.name).join('\n'));
+    return;
+  }
   // Skip already-processed files
   const existing=new Set(results.map(r=>r.fn));
   const newFiles=mf.filter(f=>!existing.has(f.name));
