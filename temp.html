@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchase Order Application</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+  :root {
+    --bg:#f0f2f5; --white:#fff; --border:#d0d5dd; --border2:#e4e7ec;
+    --accent:#d97706; --accent-bg:#fffbeb; --accent-dark:#92400e;
+    --text:#111827; --text2:#374151; --dim:#6b7280;
+    --red:#dc2626; --green:#16a34a;
+    --header-bg:#1e293b; --header-text:#f8fafc;
+    --row-hover:#fefce8; --row-alt:#f9fafb; --col-label-bg:#f1f5f9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+  .topbar{background:var(--header-bg);color:var(--header-text);padding:11px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+  .topbar-icon{font-size:20px}
+  .topbar-title{font-size:14px;font-weight:700;flex:1}
+  .topbar-sub{font-size:10px;color:#94a3b8;font-family:'JetBrains Mono',monospace}
+  .lang-toggle{display:flex;gap:4px;flex-shrink:0}
+  .lang-btn{background:transparent;border:1px solid #475569;border-radius:4px;color:#94a3b8;font-size:11px;font-weight:600;padding:3px 8px;cursor:pointer;transition:all .15s}
+  .lang-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .main{padding:12px;max-width:1100px;margin:0 auto}
+
+  .strip{background:var(--white);border:1px solid var(--border2);border-radius:8px;padding:7px 12px;display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+  .ts-live{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);display:flex;align-items:center;gap:5px}
+  .ts-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;flex-shrink:0}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .sec{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px}
+  .sec-head{background:var(--col-label-bg);border-bottom:1px solid var(--border2);padding:7px 12px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent-dark);display:flex;align-items:center;gap:6px}
+  .sec-head .note{font-size:10px;color:#9ca3af;font-weight:400;letter-spacing:0;text-transform:none;margin-left:6px}
+
+  /* ── Applicant row ── */
+  .info-row{display:grid;grid-template-columns:200px 200px 1fr 140px;border-bottom:none}
+  .info-cell{border-right:1px solid var(--border2);display:flex;flex-direction:column}
+  .info-cell:last-child{border-right:none}
+  .cell-label{font-size:10px;font-weight:600;color:var(--dim);background:var(--col-label-bg);padding:3px 10px;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center}
+  .cell-label .req{color:var(--red)}
+  .cell-input{border:none;outline:none;font-family:'Inter','Noto Sans TC',sans-serif;font-size:13px;color:var(--text);background:transparent;padding:7px 10px;width:100%;transition:background .15s}
+  .cell-input:focus{background:var(--accent-bg)}
+  .cell-input::placeholder{color:#c5cdd8;font-size:12px}
+  select.cell-input{cursor:pointer}
+
+  /* ── Items table ── */
+  .items-wrap{overflow-x:auto}
+  table.items{width:100%;border-collapse:collapse;min-width:820px}
+  table.items th{
+    background:var(--col-label-bg);
+    font-size:10px;font-weight:700;color:var(--dim);
+    padding:5px 8px;border-bottom:2px solid var(--border);
+    border-right:1px solid var(--border2);
+    text-align:left;white-space:nowrap;letter-spacing:.3px;
+    position:sticky;top:0;
+  }
+  table.items th:last-child{border-right:none}
+  table.items th .req{color:var(--red)}
+  table.items td{border-bottom:1px solid var(--border2);border-right:1px solid var(--border2);padding:0;vertical-align:middle}
+  table.items td:last-child{border-right:none}
+  table.items tr:last-child td{border-bottom:none}
+  table.items tr:nth-child(even) td{background:#f9fafb}
+  table.items tr:hover td{background:var(--row-hover)}
+  .row-num{width:26px;text-align:center;font-size:11px;font-weight:700;color:var(--dim);background:var(--col-label-bg);padding:0 4px;border-right:1px solid var(--border2);height:100%;display:flex;align-items:center;justify-content:center;min-height:34px}
+  .t-input{border:none;outline:none;font-family:'Inter','Noto Sans TC',sans-serif;font-size:13px;color:var(--text);background:transparent;padding:6px 8px;width:100%;transition:background .15s;min-height:34px}
+  .t-input:focus{background:var(--accent-bg)}
+  .t-input::placeholder{color:#c5cdd8;font-size:12px}
+
+  /* col widths */
+  .col-no   {width:30px}
+  .col-item {width:20%}
+  .col-bs   {width:13%}  /* brand/spec combined */
+  .col-size {width:8%}
+  .col-qty  {width:8%}
+  .col-bal  {width:8%}
+  .col-pur  {width:16%}
+  .col-sup  {width:13%}
+  .col-price{width:8%}
+
+  /* ── Remark row ── */
+  .remark-row{display:flex;border-top:1px solid var(--border2)}
+  .remark-label{font-size:10px;font-weight:600;color:var(--dim);background:var(--col-label-bg);padding:7px 10px;white-space:nowrap;border-right:1px solid var(--border2);display:flex;align-items:center}
+  .remark-input{flex:1;border:none;outline:none;font-family:'Inter','Noto Sans TC',sans-serif;font-size:13px;color:var(--text);background:transparent;padding:7px 10px;transition:background .15s}
+  .remark-input:focus{background:var(--accent-bg)}
+  .remark-input::placeholder{color:#c5cdd8;font-size:12px}
+
+  /* ── History panel ── */
+  .history-panel{background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;overflow:hidden;margin-bottom:10px;display:none}
+  .history-panel.show{display:block}
+  .history-head{background:#fef3c7;border-bottom:1px solid #fcd34d;padding:7px 12px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#92400e;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .h-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px}
+  .h-approved{font-size:10px;color:#16a34a;font-weight:600;background:#dcfce7;border-radius:4px;padding:1px 6px;margin-left:4px}
+  .h-for{font-size:11px;color:#92400e;padding:4px 12px 4px;font-style:italic;background:#fffde7;border-bottom:1px solid #fef3c7}
+  .htable{width:100%;border-collapse:collapse;font-size:12px}
+  .htable th{background:#fef9c3;padding:4px 10px;text-align:left;font-weight:600;color:#78350f;border-bottom:1px solid #fcd34d;font-size:10px;white-space:nowrap}
+  .htable td{padding:5px 10px;color:var(--text2);border-bottom:1px solid #fef3c7}
+  .htable tr:last-child td{border-bottom:none}
+  .htable tr:nth-child(even) td{background:#fffde7}
+
+  /* ── Submit ── */
+  .btn-submit{width:100%;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;font-family:'Inter','Noto Sans TC',sans-serif;font-size:14px;font-weight:700;border:none;border-radius:8px;padding:13px;cursor:pointer;transition:opacity .2s,transform .1s;margin-bottom:16px;letter-spacing:.3px}
+  .btn-submit:hover{opacity:.9}.btn-submit:active{transform:scale(.99)}.btn-submit:disabled{opacity:.5;cursor:not-allowed}
+
+  .status-card{display:none;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:40px 20px;text-align:center;margin-bottom:16px}
+  .s-icon{font-size:52px;margin-bottom:12px}.s-title{font-size:18px;font-weight:700;margin-bottom:6px}
+  .s-sub{font-size:13px;color:var(--dim);line-height:1.7}
+  .s-ts{margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid #fcd34d;border-radius:6px;padding:5px 12px;display:inline-block}
+
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#f1f5f9;border-radius:7px;padding:9px 18px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;max-width:90vw;text-align:center}
+  #toast.show{opacity:1}
+  .spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-icon">🛒</div>
+  <div style="flex:1">
+    <div class="topbar-title" id="tt">臨時採購申請 · Purchase Order</div>
+    <div class="topbar-sub">GA_PO_Bot</div>
+  </div>
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('zh')">中文</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="strip">
+    <div class="ts-live"><div class="ts-dot"></div><span id="ts-now">--</span></div>
+    <span style="font-size:11px;color:var(--dim)" id="strip-hint">帶 * 為必填　最多4項，不足留空　提交後即發到審批群組</span>
+  </div>
+
+  <!-- 1. Applicant -->
+  <div class="sec">
+    <div class="sec-head">👤 <span id="h1">申請人資訊 Applicant Info</span></div>
+    <div class="info-row">
+      <div class="info-cell">
+        <div class="cell-label"><span id="l-name">申請人 Applicant</span><span class="req">*</span></div>
+        <select class="cell-input" id="f-name">
+          <option value="">-- 請選擇 Select --</option>
+          <option>Phea</option>
+          <option>Srey Oun</option>
+          <option>Paul</option>
+        </select>
+      </div>
+      <div class="info-cell">
+        <div class="cell-label"><span id="l-dept">需求部門 Dept</span><span class="req">*</span></div>
+        <select class="cell-input" id="f-dept">
+          <option value="">-- 請選擇 Select --</option>
+          <option value="管理部 Admin">管理部 Admin</option>
+          <option value="生產部 Production">生產部 Production</option>
+          <option value="其它 Others">其它 Others</option>
+        </select>
+      </div>
+      <div class="info-cell">
+        <div class="cell-label"><span id="l-po">PO No.</span><span style="font-size:9px;color:#9ca3af" id="l-po-opt">如有 if any</span></div>
+        <input class="cell-input" id="f-po" type="text" placeholder="VRT-F-GA-06-xxxx" maxlength="50">
+      </div>
+      <div class="info-cell">
+        <div class="cell-label"><span id="l-date">申請日期 Date</span></div>
+        <input class="cell-input" id="f-date" type="text" readonly style="color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:12px">
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Items (4 fixed rows) -->
+  <div class="sec">
+    <div class="sec-head">🛒 <span id="h2">採購品項 Purchase Items</span><span class="note" id="h2-note">最多4項，不足留空 · Max 4 items per form</span></div>
+    <div class="items-wrap">
+      <table class="items">
+        <thead>
+          <tr>
+            <th class="col-no">#</th>
+            <th class="col-item" id="th-item">品項名稱 Item Name <span class="req">*</span></th>
+            <th class="col-bs" id="th-bs">品牌/規格 Brand / Spec</th>
+            <th class="col-size" id="th-size">尺寸 Size</th>
+            <th class="col-qty" id="th-qty">數量 Qty <span class="req">*</span></th>
+            <th class="col-bal" id="th-bal">庫存 Balance</th>
+            <th class="col-pur" id="th-pur">用途 Using For <span class="req">*</span></th>
+            <th class="col-sup" id="th-sup">供應商 Supplier</th>
+            <th class="col-price" id="th-price">預估$ Est.</th>
+          </tr>
+        </thead>
+        <tbody id="items-body"></tbody>
+      </table>
+    </div>
+    <!-- Remark inside same card -->
+    <div class="remark-row">
+      <div class="remark-label" id="l-remark">📝 備註 Remark</div>
+      <input class="remark-input" id="f-remark" type="text" placeholder="Additional notes / 其他說明" maxlength="200">
+    </div>
+  </div>
+
+  <!-- History panel (appears when typing item name) -->
+  <div class="history-panel" id="history-panel">
+    <div class="history-head">
+      📌 <span id="h-title">上次採購記錄</span>
+      <span class="h-badge" id="h-count">0</span>
+      <span class="h-approved" id="h-approved-label">✅ 已核可記錄</span>
+    </div>
+    <div class="h-for" id="h-for"></div>
+    <table class="htable">
+      <thead>
+        <tr>
+          <th id="ht-date">日期 Date</th>
+          <th id="ht-dept">部門 Dept</th>
+          <th id="ht-item2">品項 Item</th>
+          <th id="ht-qty">數量 Qty</th>
+          <th id="ht-brand">品牌 Brand</th>
+          <th id="ht-supplier">供應商 Supplier</th>
+          <th id="ht-price">金額 Amount</th>
+        </tr>
+      </thead>
+      <tbody id="history-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Submit -->
+  <button class="btn-submit" id="submit-btn" onclick="submitForm()">
+    📨 <span id="btn-label">提交申請 Submit Application</span>
+  </button>
+
+  <div class="status-card" id="status-card">
+    <div class="s-icon">✅</div>
+    <div class="s-title" id="s-title">申請已送出！</div>
+    <div class="s-sub" id="s-sub">核可人已收到通知，請等待審批結果。<br>Approver has been notified. Please wait for approval.</div>
+    <div class="s-ts" id="s-ts"></div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwVxpnEQGhEHkKt6RTTp-EEEf8Unr7qg0yITiyu8zIXS1tHJrKZL73To7FOikBsatKU/exec';
+let lang = 'zh', currentTs = '', currentDate = '';
+
+const TXT = {
+  zh:{
+    tt:'臨時採購申請 · Purchase Order',
+    'strip-hint':'帶 * 為必填　最多4項，不足留空　提交後即發到審批群組',
+    h1:'申請人資訊 Applicant Info', h2:'採購品項 Purchase Items',
+    'h2-note':'最多4項，不足留空 · Max 4 items per form',
+    'l-name':'申請人 Applicant','l-dept':'需求部門 Dept',
+    'l-po':'PO No.','l-po-opt':'如有 if any','l-date':'申請日期 Date',
+    'th-item':'品項名稱 Item Name','th-bs':'品牌/規格 Brand/Spec',
+    'th-size':'尺寸 Size','th-qty':'數量 Qty',
+    'th-bal':'庫存 Balance','th-pur':'用途 Using For',
+    'th-sup':'供應商 Supplier','th-price':'預估$ Est.',
+    'l-remark':'📝 備註 Remark',
+    'h-title':'上次採購記錄 (已核可)','h-approved-label':'✅ 已核可記錄',
+    'ht-date':'日期','ht-dept':'部門','ht-item2':'品項',
+    'ht-qty':'數量','ht-brand':'品牌/規格','ht-supplier':'供應商','ht-price':'金額',
+    'btn-label':'提交申請 Submit Application',
+    'e-name':'請選擇申請人','e-dept':'請選擇需求部門',
+    'e-items':'請至少填寫第1項的品項、數量和用途',
+    's-title':'申請已送出！',
+    's-sub':'核可人已收到通知，請等待審批。<br>Approver notified. Awaiting approval.',
+  },
+  en:{
+    tt:'Purchase Order Application',
+    'strip-hint':'* = Required · Max 4 items · Submit to send for approval',
+    h1:'Applicant Info', h2:'Purchase Items',
+    'h2-note':'Max 4 items per form, leave unused rows blank',
+    'l-name':'Applicant','l-dept':'Requesting Dept',
+    'l-po':'PO No.','l-po-opt':'if any','l-date':'Apply Date',
+    'th-item':'Item Name','th-bs':'Brand / Spec',
+    'th-size':'Size','th-qty':'Qty',
+    'th-bal':'Balance','th-pur':'Using For',
+    'th-sup':'Supplier','th-price':'Est. $',
+    'l-remark':'📝 Remark',
+    'h-title':'Last Purchase Records (Approved only)','h-approved-label':'✅ Approved records',
+    'ht-date':'Date','ht-dept':'Dept','ht-item2':'Item',
+    'ht-qty':'Qty','ht-brand':'Brand/Spec','ht-supplier':'Supplier','ht-price':'Amount',
+    'btn-label':'Submit Application',
+    'e-name':'Please select applicant','e-dept':'Please select department',
+    'e-items':'Please fill in at least item 1 (name, qty, purpose)',
+    's-title':'Submitted Successfully!',
+    's-sub':'Approver has been notified. Please wait for approval.',
+  }
+};
+
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lang-btn').forEach((b,i)=>b.classList.toggle('active',i===(l==='zh'?0:1)));
+  Object.keys(TXT[l]).forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=TXT[l][id]});
+}
+
+function pad(n){return String(n).padStart(2,'0')}
+function updateTs(){
+  const d=new Date();
+  currentTs=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  currentDate=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  document.getElementById('ts-now').textContent=currentTs;
+  document.getElementById('f-date').value=currentDate;
+}
+updateTs();setInterval(updateTs,1000);
+
+const params=new URLSearchParams(location.search);
+
+/* ── Build 4 rows ── */
+function buildRows(){
+  const rows=[
+    {ph_item:'品項名稱 e.g. Aircon filter',ph_qty:'e.g. 1 pc',ph_pur:'e.g. Office use',req:true},
+    {ph_item:'',ph_qty:'',ph_pur:'',req:false},
+    {ph_item:'',ph_qty:'',ph_pur:'',req:false},
+    {ph_item:'',ph_qty:'',ph_pur:'',req:false},
+  ];
+  document.getElementById('items-body').innerHTML=rows.map((r,i)=>`
+    <tr>
+      <td><div class="row-num">${i+1}</div></td>
+      <td><input class="t-input" id="item${i}" type="text" placeholder="${r.req?r.ph_item:'Optional'}" maxlength="100" oninput="triggerHistory(this.value)"></td>
+      <td><input class="t-input" id="bs${i}"   type="text" placeholder="N/A" maxlength="60"></td>
+      <td><input class="t-input" id="size${i}" type="text" placeholder="N/A" maxlength="40"></td>
+      <td><input class="t-input" id="qty${i}"  type="text" placeholder="${r.req?r.ph_qty:''}" maxlength="30"></td>
+      <td><input class="t-input" id="bal${i}"  type="text" placeholder="N/A" maxlength="30"></td>
+      <td><input class="t-input" id="pur${i}"  type="text" placeholder="${r.req?r.ph_pur:''}" maxlength="120"></td>
+      <td><input class="t-input" id="sup${i}"  type="text" placeholder="" maxlength="60"></td>
+      <td><input class="t-input" id="prc${i}"  type="text" placeholder="" maxlength="20"></td>
+    </tr>`).join('');
+}
+buildRows();
+
+/* ── History (approved only) ── */
+const MOCK_APPROVED=[
+  {date:'2026-02-19',dept:'生產部',item:'Aircon',qty:'1 set',brand:'GREE',supplier:'Chege Neany',price:'$150'},
+  {date:'2026-03-03',dept:'生產部',item:'Aircon',qty:'1 set',brand:'GREE 177*50cm',supplier:'Chege Neany',price:'-'},
+  {date:'2026-03-05',dept:'管理部',item:'Light 9w',qty:'1 pc',brand:'N/A',supplier:'Ly Kheag',price:'$3.5'},
+  {date:'2026-02-23',dept:'GA',item:'Sale note form A3',qty:'30 books',brand:'N/A',supplier:'-',price:'-'},
+  {date:'2026-03-05',dept:'GA',item:'Sand',qty:'1m3',brand:'N/A',supplier:'-',price:'-'},
+];
+
+let hTimer=null,lastQ='';
+function triggerHistory(val){
+  clearTimeout(hTimer);
+  if(val.trim().length<2){document.getElementById('history-panel').classList.remove('show');lastQ='';return}
+  hTimer=setTimeout(()=>fetchHistory(val.trim()),400);
+}
+
+async function fetchHistory(q){
+  if(q===lastQ)return;
+  lastQ=q;
+  let records=null;
+  try{
+    const r=await fetch(`${GAS_URL}?action=tempHistory&item=${encodeURIComponent(q)}&approvedOnly=1`);
+    const d=await r.json();
+    if(d.records&&d.records.length>0)records=d.records;
+  }catch(e){}
+
+  // mock fallback for preview
+  if(!records){
+    const kw=q.toLowerCase();
+    records=MOCK_APPROVED.filter(r=>r.item.toLowerCase().includes(kw));
+  }
+
+  const panel=document.getElementById('history-panel');
+  if(records&&records.length>0){
+    document.getElementById('h-count').textContent=records.length;
+    document.getElementById('h-for').textContent=(lang==='zh'?'搜尋：':'Searching: ')+ '"'+q+'"';
+    document.getElementById('history-body').innerHTML=records.map(r=>`
+      <tr>
+        <td>${r.date}</td><td>${r.dept}</td><td>${r.item}</td>
+        <td>${r.qty}</td><td>${r.brand||'N/A'}</td><td>${r.supplier||'-'}</td><td>${r.price||'-'}</td>
+      </tr>`).join('');
+    panel.classList.add('show');
+  }else{panel.classList.remove('show')}
+}
+
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+
+function getV(id){return document.getElementById(id)?document.getElementById(id).value.trim():''}
+
+async function submitForm(){
+  const t=TXT[lang];
+  const name=getV('f-name'), dept=getV('f-dept');
+  if(!name){showToast(t['e-name']);return}
+  if(!dept){showToast(t['e-dept']);return}
+
+  const items=[];
+  for(let i=0;i<4;i++){
+    const itemName=getV(`item${i}`);
+    if(itemName){
+      items.push({
+        no:i+1, itemName,
+        brandSpec: getV(`bs${i}`)||'N/A',
+        size:      getV(`size${i}`)||'N/A',
+        qty:       getV(`qty${i}`)||'-',
+        balance:   getV(`bal${i}`)||'N/A',
+        purpose:   getV(`pur${i}`)||'-',
+        supplier:  getV(`sup${i}`)||'',
+        estPrice:  getV(`prc${i}`)||'',
+      });
+    }
+  }
+  if(items.length===0){showToast(t['e-items']);return}
+
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=true;
+  btn.innerHTML=`<span class="spinner"></span>${lang==='zh'?'提交中...':'Submitting...'}`;
+
+  const payload={
+    action:'tempSubmit', timestamp:currentTs,
+    applicantName:name, department:dept,
+    poNumber:getV('f-po'), remarks:getV('f-remark'),
+    items, tgUid:params.get('uid')||''
+  };
+
+  try{
+    const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await res.json();
+    if(d.ok){
+      document.querySelector('.main').innerHTML=`
+        <div class="status-card" style="display:block;margin-top:16px;background:#fff;border:1px solid #d0d5dd;border-radius:10px;padding:40px 20px;text-align:center">
+          <div class="s-icon">✅</div>
+          <div class="s-title">${t['s-title']}</div>
+          <div class="s-sub">${t['s-sub']}</div>
+          <div class="s-ts">📅 ${currentTs}</div>
+        </div>`;
+    }else{
+      showToast('❌ '+(d.error||'Error'));
+      btn.disabled=false;btn.innerHTML=`📨 <span id="btn-label">${t['btn-label']}</span>`;
+    }
+  }catch(e){
+    showToast('❌ Network error. Please retry.');
+    btn.disabled=false;btn.innerHTML=`📨 <span id="btn-label">${t['btn-label']}</span>`;
+  }
+}
+</script>
+</body>
+</html>
