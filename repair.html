@@ -515,7 +515,7 @@ async function submitForm(){
 
   try{
     if(photos.length>0)document.getElementById('prog-fill').style.width='70%';
-    const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const res=await fetch(GAS_URL+'?action=repairSubmit&data='+encodeURIComponent(JSON.stringify(payload)));
     if(photos.length>0)document.getElementById('prog-fill').style.width='100%';
     const d=await res.json();
     if(d.ok){
