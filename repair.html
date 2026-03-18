@@ -521,19 +521,23 @@ async function submitForm(){
     if(photos.length>0)document.getElementById('prog-fill').style.width='60%';
     const d=await res.json();
     if(d.ok){
-      // Send photos separately via POST (base64 too large for GET)
-      if(photos.length>0 && d.repairId){
+      // Send photos directly to Telegram Bot API from browser
+      if(photos.length>0){
+        const BOT_TOKEN='8685420985:AAGW3zqNbFroVd28psTgDFmW_Bckt1zdVlY';
+        const CHAT_ID='-5170895112';
         for(let pi=0;pi<photos.length;pi++){
-          await fetch(GAS_URL, {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({
-              action:'repairPhoto',
-              repairId: d.repairId,
-              photoIndex: pi,
-              photo: photos[pi]
-            })
-          });
+          try{
+            const b64=photos[pi];
+            const byteStr=atob(b64);
+            const arr=new Uint8Array(byteStr.length);
+            for(let j=0;j<byteStr.length;j++) arr[j]=byteStr.charCodeAt(j);
+            const blob=new Blob([arr],{type:'image/jpeg'});
+            const fd=new FormData();
+            fd.append('chat_id',CHAT_ID);
+            fd.append('photo',blob,'photo.jpg');
+            if(pi===0) fd.append('caption','📷 '+applicantName+' | '+currentTs.substring(0,16));
+            await fetch('https://api.telegram.org/bot'+BOT_TOKEN+'/sendPhoto',{method:'POST',body:fd});
+          }catch(pe){console.log('photo err',pe);}
         }
       }
       if(photos.length>0)document.getElementById('prog-fill').style.width='100%';
