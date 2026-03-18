@@ -521,10 +521,19 @@ async function submitForm(){
     if(photos.length>0)document.getElementById('prog-fill').style.width='60%';
     const d=await res.json();
     if(d.ok){
-      // Send photos separately if any
+      // Send photos separately via POST (base64 too large for GET)
       if(photos.length>0 && d.repairId){
         for(let pi=0;pi<photos.length;pi++){
-          await fetch(GAS_URL+'?action=repairPhoto&repairId='+encodeURIComponent(d.repairId)+'&photoIndex='+pi+'&photo='+encodeURIComponent(photos[pi]));
+          await fetch(GAS_URL, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+              action:'repairPhoto',
+              repairId: d.repairId,
+              photoIndex: pi,
+              photo: photos[pi]
+            })
+          });
         }
       }
       if(photos.length>0)document.getElementById('prog-fill').style.width='100%';
