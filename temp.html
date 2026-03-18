@@ -412,7 +412,7 @@ async function submitForm(){
   };
 
   try{
-    const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const res=await fetch(GAS_URL+'?action=tempSubmit&data='+encodeURIComponent(JSON.stringify(payload)));
     const d=await res.json();
     if(d.ok){
       document.querySelector('.main').innerHTML=`
