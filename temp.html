@@ -495,16 +495,16 @@ function renderRecords(records){
     <div class="rec-head">${lang==='zh'?'查詢結果':'Results'} — ${records.length} ${lang==='zh'?'筆':'records'}</div>
     <div class="rec-scroll"><table class="rtable">
       <thead><tr>${hdrs.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
-      <tbody>${records.map(row=>`<tr>${row.map((c,i)=>i===11?`<td><span class="badge ${bc(c)}">${bt(c)}</span></td>`:`<td title="${c}">${c||'—'}</td>`).join('')}</tr>`).join('')}</tbody>
+      <tbody>${records.map(row=>`<tr>${row.map((c,i)=>i===13?`<td><span class="badge ${bc(c)}">${bt(c)}</span></td>`:`<td title="${c}">${c||'—'}</td>`).join('')}</tr>`).join('')}</tbody>
     </table></div>`;
   if(records.length>0)document.getElementById('r-export-btn').classList.add('show');
 }
 
 function renderStats(records){
   document.getElementById('sv-total').textContent=records.length;
-  document.getElementById('sv-approved').textContent=records.filter(r=>r[11]==='已核可').length;
-  document.getElementById('sv-pending').textContent=records.filter(r=>r[11]==='待審核').length;
-  document.getElementById('sv-rejected').textContent=records.filter(r=>r[11]==='已退件').length;
+  document.getElementById('sv-approved').textContent=records.filter(r=>r[13]==='已核可').length;
+  document.getElementById('sv-pending').textContent=records.filter(r=>r[13]==='待審核').length;
+  document.getElementById('sv-rejected').textContent=records.filter(r=>r[13]==='已退件').length;
   document.getElementById('r-stats').style.display='flex';
 }
 
