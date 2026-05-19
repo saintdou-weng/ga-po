@@ -488,7 +488,8 @@ async function queryRecords(){
 
 function renderRecords(records){
   if(!records.length){document.getElementById('rec-wrap').innerHTML=`<div class="empty-state"><div class="ei">🔍</div><div>${lang==='zh'?'沒有找到符合的記錄':'No records found'}</div></div>`;return}
-  const hdrs=['時間','申請人','部門','PO號','品項','品牌/規格','數量','用途','供應商','預估金額','備註','狀態','核可人','核可時間'];
+  // [FIX] 全16欄與 TEMP_SHEET 對齊：col14(idx13)=狀態
+  const hdrs=['時間','申請人','部門','PO號','品項','品牌/規格','尺寸','數量','庫存','用途','供應商','預估金額','備註','狀態','核可人','核可時間'];
   const bc=s=>s==='已核可'?'ba':s==='已退件'?'br':'bp';
   const bt=s=>s==='已核可'?'✅ '+s:s==='已退件'?'❌ '+s:'⏳ '+s;
   document.getElementById('rec-wrap').innerHTML=`
@@ -510,7 +511,8 @@ function renderStats(records){
 
 function exportExcel(){
   if(!currentData.length){showToast(lang==='zh'?'沒有資料':'No data');return}
-  const hdrs=['時間戳記','申請人','部門','PO號','品項名稱','品牌/規格','數量','用途','供應商','預估金額','備註','狀態','核可人','核可時間'];
+  // [FIX] 全16欄與 TEMP_SHEET 對齊
+  const hdrs=['時間戳記','申請人','部門','PO號','品項名稱','品牌/規格','尺寸','數量','庫存','用途','供應商','預估金額','備註','狀態','核可人','核可時間'];
   const ws=XLSX.utils.aoa_to_sheet([hdrs,...currentData]);
   ws['!cols']=hdrs.map((_,i)=>({wch:i===0?18:i===4||i===7?26:14}));
   const wb=XLSX.utils.book_new();

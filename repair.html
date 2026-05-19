@@ -505,24 +505,41 @@ async function submitForm(){
     const d=await res.json();
 
     if(d.ok){
-      // Send photos directly to Telegram from browser
+      // [FIX-1] 照片傳送：>1張用 sendMediaGroup（相簿），1張用 sendPhoto
+      // GAS 已先發送完整申請內容（含 approve/reject 按鈕）
+      // 這裡只傳照片，不放長 caption，避免訊息被截斷或覆蓋
       if(photos.length>0){
         const BOT='8685420985:AAGW3zqNbFroVd28psTgDFmW_Bckt1zdVlY';
         const CHAT='-5170895112';
-        let sent=0;
-        for(const b64 of photos){
-          try{
+        const shortCaption=`📷 ${name} | ${dept} | ${currentTs.substring(0,16)}`;
+        try{
+          if(photos.length>1){
+            // sendMediaGroup：多張照片組成相簿
+            const fd=new FormData();
+            fd.append('chat_id',CHAT);
+            const mediaArr=photos.map((_,idx)=>({type:'photo',media:`attach://file${idx}`}));
+            // 只在第一張加短 caption
+            mediaArr[0].caption=shortCaption;
+            fd.append('media',JSON.stringify(mediaArr));
+            photos.forEach((b64,idx)=>{
+              const byteStr=atob(b64);
+              const arr=new Uint8Array(byteStr.length);
+              for(let j=0;j<byteStr.length;j++)arr[j]=byteStr.charCodeAt(j);
+              fd.append(`file${idx}`,new Blob([arr],{type:'image/jpeg'}),`photo${idx}.jpg`);
+            });
+            await fetch(`https://api.telegram.org/bot${BOT}/sendMediaGroup`,{method:'POST',body:fd});
+          }else{
+            // 單張照片：sendPhoto
+            const b64=photos[0];
             const byteStr=atob(b64);const arr=new Uint8Array(byteStr.length);
             for(let j=0;j<byteStr.length;j++)arr[j]=byteStr.charCodeAt(j);
             const blob=new Blob([arr],{type:'image/jpeg'});
             const fd=new FormData();
             fd.append('chat_id',CHAT);fd.append('photo',blob,'photo.jpg');
-            if(sent===0)fd.append('caption','📷 '+name+' | '+dept+' | '+currentTs.substring(0,16));
+            fd.append('caption',shortCaption);
             await fetch(`https://api.telegram.org/bot${BOT}/sendPhoto`,{method:'POST',body:fd});
-            sent++;
-            document.getElementById('prog-fill').style.width=(50+sent*16)+'%';
-          }catch(pe){console.log('photo err',pe)}
-        }
+          }
+        }catch(pe){console.log('photo send err',pe)}
       }
       document.getElementById('prog-fill').style.width='100%';
       setTimeout(()=>{document.getElementById('prog-wrap').style.display='none';},500);
